@@ -1,6 +1,8 @@
 package jsonschema
 
 import (
+	"fmt"
+	"github.com/google/go-cmp/cmp"
 	"testing"
 	"time"
 
@@ -44,23 +46,23 @@ func (self *propertySuite) TestLoad(c *C) {
 			Type:     "object",
 			Required: []string{"Float64", "Interface"},
 			Properties: map[string]*property{
-				"Bool":       &property{Type: "boolean"},
-				"Integer":    &property{Type: "integer"},
-				"Integer8":   &property{Type: "integer"},
-				"Integer16":  &property{Type: "integer"},
-				"Integer32":  &property{Type: "integer"},
-				"Integer64":  &property{Type: "integer"},
-				"UInteger":   &property{Type: "integer"},
-				"UInteger8":  &property{Type: "integer"},
-				"UInteger16": &property{Type: "integer"},
-				"UInteger32": &property{Type: "integer"},
-				"UInteger64": &property{Type: "integer"},
-				"String":     &property{Type: "string"},
-				"Bytes":      &property{Type: "string"},
-				"Float32":    &property{Type: "number"},
-				"Float64":    &property{Type: "number"},
-				"Interface":  &property{},
-				"Timestamp":  &property{Type: "string", Format: "date-time"},
+				"Bool":       {Type: "boolean"},
+				"Integer":    {Type: "integer"},
+				"Integer8":   {Type: "integer"},
+				"Integer16":  {Type: "integer"},
+				"Integer32":  {Type: "integer"},
+				"Integer64":  {Type: "integer"},
+				"UInteger":   {Type: "integer"},
+				"UInteger8":  {Type: "integer"},
+				"UInteger16": {Type: "integer"},
+				"UInteger32": {Type: "integer"},
+				"UInteger64": {Type: "integer"},
+				"String":     {Type: "string"},
+				"Bytes":      {Type: "string"},
+				"Float32":    {Type: "number"},
+				"Float64":    {Type: "number"},
+				"Interface":  {},
+				"Timestamp":  {Type: "string", Format: "date-time"},
 			},
 		},
 	})
@@ -80,7 +82,7 @@ func (self *propertySuite) TestLoadWithTag(c *C) {
 			Type:     "object",
 			Required: []string{"test"},
 			Properties: map[string]*property{
-				"test": &property{Type: "boolean"},
+				"test": {Type: "boolean"},
 			},
 		},
 	})
@@ -105,20 +107,20 @@ func (self *propertySuite) TestLoadSliceAndContains(c *C) {
 		property: property{
 			Type: "object",
 			Properties: map[string]*property{
-				"Slice": &property{
+				"Slice": {
 					Type:  "array",
 					Items: &property{Type: "string"},
 				},
-				"SliceOfInterface": &property{
+				"SliceOfInterface": {
 					Type: "array",
 				},
-				"SliceOfStruct": &property{
+				"SliceOfStruct": {
 					Type: "array",
 					Items: &property{
 						Type:     "object",
 						Required: []string{"Value"},
 						Properties: map[string]*property{
-							"Value": &property{
+							"Value": {
 								Type: "string",
 							},
 						},
@@ -146,10 +148,10 @@ func (self *propertySuite) TestLoadNested(c *C) {
 		property: property{
 			Type: "object",
 			Properties: map[string]*property{
-				"Struct": &property{
+				"Struct": {
 					Type: "object",
 					Properties: map[string]*property{
-						"Foo": &property{Type: "string"},
+						"Foo": {Type: "string"},
 					},
 					Required: []string{"Foo"},
 				},
@@ -176,7 +178,7 @@ func (self *propertySuite) TestLoadEmbedded(c *C) {
 		property: property{
 			Type: "object",
 			Properties: map[string]*property{
-				"Foo": &property{Type: "string"},
+				"Foo": {Type: "string"},
 			},
 			Required: []string{"Foo"},
 		},
@@ -197,14 +199,14 @@ func (self *propertySuite) TestLoadMap(c *C) {
 		property: property{
 			Type: "object",
 			Properties: map[string]*property{
-				"Maps": &property{
+				"Maps": {
 					Type: "object",
 					Properties: map[string]*property{
-						".*": &property{Type: "string"},
+						".*": {Type: "string"},
 					},
 					AdditionalProperties: false,
 				},
-				"MapOfInterface": &property{
+				"MapOfInterface": {
 					Type:                 "object",
 					AdditionalProperties: true,
 				},
@@ -251,4 +253,157 @@ func (self *propertySuite) TestMarshal(c *C) {
 	json, err := j.Marshal()
 	c.Assert(err, IsNil)
 	c.Assert(string(json), Equals, expected)
+}
+
+func TestLoadMapDeep(t *testing.T) {
+	t.Run("within a struct map of string to string", func(t *testing.T) {
+		j := &Document{}
+		j.ReadDeep(&ExampleJSONBasicMaps{
+			Maps: map[string]string{
+				"aString":          "ok1",
+				"anotherString":    "anotherValue",
+				"yetAnotherString": "anotherValue",
+			},
+		})
+
+		expected := Document{
+			Schema: "http://json-schema.org/schema#",
+			property: property{
+				Type: "object",
+				Properties: map[string]*property{
+					"Maps": {
+						Type: "object",
+						Properties: map[string]*property{
+							"aString":          {Type: "string"},
+							"anotherString":    {Type: "string"},
+							"yetAnotherString": {Type: "string"},
+						},
+					},
+					"MapOfInterface": {
+						Type: "object",
+					},
+				},
+				Required: []string{"MapOfInterface"},
+			},
+		}
+		if !cmp.Equal(expected, *j, cmp.AllowUnexported(Document{})) {
+			t.Fail()
+			fmt.Println(cmp.Diff(expected, *j, cmp.AllowUnexported(Document{})))
+		}
+	})
+	t.Run("map of string to string", func(t *testing.T) {
+		j := &Document{}
+		j.ReadDeep(map[string]string{
+			"aString":          "ok1",
+			"anotherString":    "anotherValue",
+			"yetAnotherString": "anotherValue",
+		})
+
+		expected := Document{
+			Schema: "http://json-schema.org/schema#",
+			property: property{
+				Type: "object",
+				Properties: map[string]*property{
+					"aString":          {Type: "string"},
+					"anotherString":    {Type: "string"},
+					"yetAnotherString": {Type: "string"},
+				},
+			},
+		}
+		if !cmp.Equal(expected, *j, cmp.AllowUnexported(Document{})) {
+			t.Fail()
+			fmt.Println(cmp.Diff(expected, *j, cmp.AllowUnexported(Document{})))
+		}
+	})
+	t.Run("map of string to interface", func(t *testing.T) {
+		j := &Document{}
+		j.ReadDeep(map[string]interface{}{
+			"aString":          "ok1",
+			"anotherString":    "anotherValue",
+			"yetAnotherString": "anotherValue",
+			"aStringInsideMap": "ok2",
+			"aBool":            true,
+			"anInt":            1,
+			"aFloat":           1.699,
+			"aMapOfStringToString": map[string]string{
+				"justAString": "ok3",
+			},
+			"aMapOfStringToInterface": map[string]interface{}{
+				"justAnotherString": "ok4",
+				"anotherBool":       true,
+				"anothernInt":       1,
+				"anotherFloat":      1.699,
+			},
+			"aMapOfInterfaceToInterface": map[interface{}]interface{}{
+				"justAnotherString": "ok4",
+				"anotherBool":       true,
+				"anothernInt":       1,
+				"anotherFloat":      1.699,
+			},
+			"aMapOfInterfaceToMapOfInterfaceToInterface": map[interface{}]interface{}{
+				"aPointerToMapOfInterfaceToInterface": &map[interface{}]interface{}{
+					"justAnotherString": "ok4",
+					"anotherBool":       true,
+					"anothernInt":       1,
+					"anotherFloat":      1.699,
+				},
+			},
+		})
+
+		expected := Document{
+			Schema: "http://json-schema.org/schema#",
+			property: property{
+				Type: "object",
+				Properties: map[string]*property{
+					"aString":          {Type: "string"},
+					"anotherString":    {Type: "string"},
+					"yetAnotherString": {Type: "string"},
+					"aStringInsideMap": {Type: "string"},
+					"aBool":            {Type: "boolean"},
+					"anInt":            {Type: "integer"},
+					"aFloat":           {Type: "number"},
+					"aMapOfStringToString": {
+						Type:       "object",
+						Properties: map[string]*property{"justAString": {Type: "string"}},
+					},
+					"aMapOfStringToInterface": {
+						Type: "object",
+						Properties: map[string]*property{
+							"anotherBool":       {Type: "boolean"},
+							"anotherFloat":      {Type: "number"},
+							"anothernInt":       {Type: "integer"},
+							"justAnotherString": {Type: "string"},
+						},
+					},
+					"aMapOfInterfaceToInterface": {
+						Type: "object",
+						Properties: map[string]*property{
+							"anotherBool":       {Type: "boolean"},
+							"anotherFloat":      {Type: "number"},
+							"anothernInt":       {Type: "integer"},
+							"justAnotherString": {Type: "string"},
+						},
+					},
+					"aMapOfInterfaceToMapOfInterfaceToInterface": {
+						Type: "object",
+						Properties: map[string]*property{
+							"aPointerToMapOfInterfaceToInterface": {
+								Type: "object",
+								Properties: map[string]*property{
+									"anotherBool":       {Type: "boolean"},
+									"anotherFloat":      {Type: "number"},
+									"anothernInt":       {Type: "integer"},
+									"justAnotherString": {Type: "string"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		if !cmp.Equal(expected, *j, cmp.AllowUnexported(Document{})) {
+			t.Fail()
+			fmt.Println(cmp.Diff(expected, *j, cmp.AllowUnexported(Document{})))
+		}
+	})
 }

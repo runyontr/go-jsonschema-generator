@@ -22,7 +22,15 @@ func (d *Document) Read(variable interface{}) {
 	d.setDefaultSchema()
 
 	value := reflect.ValueOf(variable)
-	d.read(value.Type(), tagOptions(""))
+	d.read(value.Type(), "")
+}
+
+// ReadDeep reads the variable structure into the JSON-Schema Document
+func (d *Document) ReadDeep(variable interface{}) {
+	d.setDefaultSchema()
+
+	value := reflect.ValueOf(variable)
+	d.readDeep(value, "")
 }
 
 func (d *Document) setDefaultSchema() {
@@ -38,8 +46,8 @@ func (d *Document) Marshal() ([]byte, error) {
 
 // String return the JSON encoding of the Document as a string
 func (d *Document) String() string {
-	json, _ := d.Marshal()
-	return string(json)
+	jsonBytes, _ := d.Marshal()
+	return string(jsonBytes)
 }
 
 type property struct {
@@ -72,13 +80,45 @@ func (p *property) read(t reflect.Type, opts tagOptions) {
 	}
 }
 
+func (p *property) readDeep(v reflect.Value, opts tagOptions) {
+	jsType, format, kind := getTypeFromMapping(v.Type())
+	if jsType != "" {
+		p.Type = jsType
+	}
+	if format != "" {
+		p.Format = format
+	}
+
+	switch kind {
+	case reflect.Slice:
+		p.readFromSliceDeep(v)
+	case reflect.Map:
+		p.readFromMapDeep(v)
+	case reflect.Struct:
+		p.readFromStructDeep(v)
+	case reflect.Ptr, reflect.Interface:
+		p.readDeep(v.Elem(), opts)
+	}
+}
+
 func (p *property) readFromSlice(t reflect.Type) {
 	jsType, _, kind := getTypeFromMapping(t.Elem())
 	if kind == reflect.Uint8 {
 		p.Type = "string"
 	} else if jsType != "" {
 		p.Items = &property{}
-		p.Items.read(t.Elem(), tagOptions(""))
+		p.Items.read(t.Elem(), "")
+	}
+}
+
+func (p *property) readFromSliceDeep(v reflect.Value) {
+	t := v.Type()
+	jsType, _, kind := getTypeFromMapping(t.Elem())
+	if kind == reflect.Uint8 {
+		p.Type = "string"
+	} else if jsType != "" {
+		p.Items = &property{}
+		p.Items.readDeep(v.Elem(), "")
 	}
 }
 
@@ -91,6 +131,32 @@ func (p *property) readFromMap(t reflect.Type) {
 	} else {
 		p.AdditionalProperties = true
 	}
+}
+
+func (p *property) readFromMapDeep(v reflect.Value) {
+	properties := make(map[string]*property)
+	iter := v.MapRange()
+	for iter.Next() {
+		key := iter.Key()
+		value := iter.Value()
+		keyName := mapKeyToString(key)
+		properties[keyName] = &property{}
+		properties[keyName].readDeep(value, "")
+	}
+
+	if len(properties) > 0 {
+		p.Properties = properties
+	}
+}
+
+func mapKeyToString(key reflect.Value) string {
+	keyKind := key.Kind()
+
+	if keyKind == reflect.Interface {
+		return mapKeyToString(key.Elem())
+	}
+
+	return key.String()
 }
 
 func (p *property) readFromStruct(t reflect.Type) {
@@ -132,8 +198,48 @@ func (p *property) readFromStruct(t reflect.Type) {
 	}
 }
 
+func (p *property) readFromStructDeep(v reflect.Value) {
+	t := v.Type()
+	p.Type = "object"
+	p.Properties = make(map[string]*property, 0)
+	p.AdditionalProperties = false
+
+	count := t.NumField()
+	for i := 0; i < count; i++ {
+		field := t.Field(i)
+
+		tag := field.Tag.Get("json")
+		name, opts := parseTag(tag)
+		if name == "" {
+			name = field.Name
+		}
+		if name == "-" {
+			continue
+		}
+
+		if field.Anonymous {
+			embeddedProperty := &property{}
+			embeddedProperty.readDeep(v.Field(i), opts)
+
+			for name, property := range embeddedProperty.Properties {
+				p.Properties[name] = property
+			}
+			p.Required = append(p.Required, embeddedProperty.Required...)
+
+			continue
+		}
+
+		p.Properties[name] = &property{}
+		p.Properties[name].readDeep(v.Field(i), opts)
+
+		if !opts.Contains("omitempty") {
+			p.Required = append(p.Required, name)
+		}
+	}
+}
+
 var formatMapping = map[string][]string{
-	"time.Time": []string{"string", "date-time"},
+	"time.Time": {"string", "date-time"},
 }
 
 var kindMapping = map[reflect.Kind]string{
@@ -161,11 +267,12 @@ func getTypeFromMapping(t reflect.Type) (string, string, reflect.Kind) {
 		return v[0], v[1], reflect.String
 	}
 
-	if v, ok := kindMapping[t.Kind()]; ok {
-		return v, "", t.Kind()
+	kind := t.Kind()
+	if v, ok := kindMapping[kind]; ok {
+		return v, "", kind
 	}
 
-	return "", "", t.Kind()
+	return "", "", kind
 }
 
 type tagOptions string
@@ -174,7 +281,7 @@ func parseTag(tag string) (string, tagOptions) {
 	if idx := strings.Index(tag, ","); idx != -1 {
 		return tag[:idx], tagOptions(tag[idx+1:])
 	}
-	return tag, tagOptions("")
+	return tag, ""
 }
 
 func (o tagOptions) Contains(optionName string) bool {
