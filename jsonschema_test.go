@@ -330,20 +330,20 @@ func TestLoadMapDeep(t *testing.T) {
 			"aMapOfStringToInterface": map[string]interface{}{
 				"justAnotherString": "ok4",
 				"anotherBool":       true,
-				"anothernInt":       1,
+				"anotherInt":        1,
 				"anotherFloat":      1.699,
 			},
 			"aMapOfInterfaceToInterface": map[interface{}]interface{}{
 				"justAnotherString": "ok4",
 				"anotherBool":       true,
-				"anothernInt":       1,
+				"anotherInt":        1,
 				"anotherFloat":      1.699,
 			},
 			"aMapOfInterfaceToMapOfInterfaceToInterface": map[interface{}]interface{}{
 				"aPointerToMapOfInterfaceToInterface": &map[interface{}]interface{}{
 					"justAnotherString": "ok4",
 					"anotherBool":       true,
-					"anothernInt":       1,
+					"anotherInt":        1,
 					"anotherFloat":      1.699,
 					"nilData":           nil,
 					"zeroIntValue":      0,
@@ -373,7 +373,7 @@ func TestLoadMapDeep(t *testing.T) {
 						Properties: map[string]*property{
 							"anotherBool":       {Type: "boolean"},
 							"anotherFloat":      {Type: "number"},
-							"anothernInt":       {Type: "integer"},
+							"anotherInt":        {Type: "integer"},
 							"justAnotherString": {Type: "string"},
 						},
 					},
@@ -382,7 +382,7 @@ func TestLoadMapDeep(t *testing.T) {
 						Properties: map[string]*property{
 							"anotherBool":       {Type: "boolean"},
 							"anotherFloat":      {Type: "number"},
-							"anothernInt":       {Type: "integer"},
+							"anotherInt":        {Type: "integer"},
 							"justAnotherString": {Type: "string"},
 						},
 					},
@@ -394,7 +394,7 @@ func TestLoadMapDeep(t *testing.T) {
 								Properties: map[string]*property{
 									"anotherBool":       {Type: "boolean"},
 									"anotherFloat":      {Type: "number"},
-									"anothernInt":       {Type: "integer"},
+									"anotherInt":        {Type: "integer"},
 									"justAnotherString": {Type: "string"},
 									"nilData":           {Type: "null"},
 									"zeroIntValue":      {Type: "integer"},
