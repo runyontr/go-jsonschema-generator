@@ -324,6 +324,7 @@ func TestLoadMapDeep(t *testing.T) {
 			"aBool":            true,
 			"anInt":            1,
 			"aFloat":           1.699,
+			"sliceOfString":    []string{"something"},
 			"aMapOfStringToString": map[string]string{
 				"justAString": "ok3",
 			},
@@ -348,6 +349,7 @@ func TestLoadMapDeep(t *testing.T) {
 					"nilData":           nil,
 					"zeroIntValue":      0,
 					"zeroStringValue":   "",
+					"sliceOfInt":        []int{1},
 				},
 			},
 		})
@@ -364,6 +366,7 @@ func TestLoadMapDeep(t *testing.T) {
 					"aBool":            {Type: "boolean"},
 					"anInt":            {Type: "integer"},
 					"aFloat":           {Type: "number"},
+					"sliceOfString":    {Type: "array", Items: &property{Type: "string"}},
 					"aMapOfStringToString": {
 						Type:       "object",
 						Properties: map[string]*property{"justAString": {Type: "string"}},
@@ -397,6 +400,7 @@ func TestLoadMapDeep(t *testing.T) {
 									"anotherInt":        {Type: "integer"},
 									"justAnotherString": {Type: "string"},
 									"nilData":           {Type: "null"},
+									"sliceOfInt":        {Type: "array", Items: &property{Type: "integer"}},
 									"zeroIntValue":      {Type: "integer"},
 									"zeroStringValue":   {Type: "string"},
 								},

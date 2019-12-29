@@ -122,7 +122,7 @@ func (p *property) readFromSliceDeep(v reflect.Value) {
 		p.Type = "string"
 	} else if jsType != "" {
 		p.Items = &property{}
-		p.Items.readDeep(v.Elem(), "")
+		p.Items.readDeep(v.Index(0), "")
 	}
 }
 
