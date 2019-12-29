@@ -3,10 +3,9 @@ package jsonschema
 import (
 	"fmt"
 	"github.com/google/go-cmp/cmp"
+	. "gopkg.in/check.v1"
 	"testing"
 	"time"
-
-	. "gopkg.in/check.v1"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -346,6 +345,9 @@ func TestLoadMapDeep(t *testing.T) {
 					"anotherBool":       true,
 					"anothernInt":       1,
 					"anotherFloat":      1.699,
+					"nilData":           nil,
+					"zeroIntValue":      0,
+					"zeroStringValue":   "",
 				},
 			},
 		})
@@ -394,6 +396,9 @@ func TestLoadMapDeep(t *testing.T) {
 									"anotherFloat":      {Type: "number"},
 									"anothernInt":       {Type: "integer"},
 									"justAnotherString": {Type: "string"},
+									"nilData":           {Type: "null"},
+									"zeroIntValue":      {Type: "integer"},
+									"zeroStringValue":   {Type: "string"},
 								},
 							},
 						},

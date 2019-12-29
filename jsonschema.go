@@ -81,6 +81,10 @@ func (p *property) read(t reflect.Type, opts tagOptions) {
 }
 
 func (p *property) readDeep(v reflect.Value, opts tagOptions) {
+	if !v.IsValid() {
+		p.Type = "null"
+		return
+	}
 	jsType, format, kind := getTypeFromMapping(v.Type())
 	if jsType != "" {
 		p.Type = jsType
