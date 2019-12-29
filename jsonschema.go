@@ -116,16 +116,27 @@ func (p *property) readFromSlice(t reflect.Type) {
 }
 
 func (p *property) readFromSliceDeep(v reflect.Value) {
-	t := v.Type()
-	jsType, _, kind := getTypeFromMapping(t.Elem())
+	if v.Len() == 0 {
+		t := v.Type()
+		jsType, _, kind := getTypeFromMapping(t.Elem())
+		if kind == reflect.Uint8 {
+			p.Type = "string"
+		} else if jsType != "" {
+			p.Items = &property{}
+			if v.Len() == 0 {
+				p.Items.read(t.Elem(), "")
+				return
+			}
+			p.Items.readDeep(v.Index(0), "")
+		}
+		return
+	}
+
+	_, _, kind := getTypeFromMapping(v.Index(0).Type())
 	if kind == reflect.Uint8 {
 		p.Type = "string"
-	} else if jsType != "" {
+	} else {
 		p.Items = &property{}
-		if v.Len() == 0 {
-			p.Items.read(t.Elem(), "")
-			return
-		}
 		p.Items.readDeep(v.Index(0), "")
 	}
 }

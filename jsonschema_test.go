@@ -419,4 +419,29 @@ func TestLoadMapDeep(t *testing.T) {
 			fmt.Println(cmp.Diff(expected, *j, cmp.AllowUnexported(Document{})))
 		}
 	})
+	t.Run("slice of interface with string value", func(t *testing.T) {
+		j := &Document{}
+		j.ReadDeep(map[string]interface{}{
+			"sliceOfInterfaceWithString": []interface{}{"something"},
+		})
+
+		expected := Document{
+			Schema: "http://json-schema.org/schema#",
+			property: property{
+				Type: "object",
+				Properties: map[string]*property{
+					"sliceOfInterfaceWithString": {
+						Type: "array",
+						Items: &property{
+							Type: "string",
+						},
+					},
+				},
+			},
+		}
+		if !cmp.Equal(expected, *j, cmp.AllowUnexported(Document{})) {
+			t.Fail()
+			fmt.Println(cmp.Diff(expected, *j, cmp.AllowUnexported(Document{})))
+		}
+	})
 }
