@@ -339,6 +339,7 @@ func TestLoadMapDeep(t *testing.T) {
 				"anotherBool":       true,
 				"anotherInt":        1,
 				"anotherFloat":      1.699,
+				"emptySliceOfFloat": []float64{},
 			},
 			"aMapOfInterfaceToMapOfInterfaceToInterface": map[interface{}]interface{}{
 				"aPointerToMapOfInterfaceToInterface": &map[interface{}]interface{}{
@@ -386,6 +387,7 @@ func TestLoadMapDeep(t *testing.T) {
 							"anotherBool":       {Type: "boolean"},
 							"anotherFloat":      {Type: "number"},
 							"anotherInt":        {Type: "integer"},
+							"emptySliceOfFloat": {Type: "array", Items: &property{Type: "number"}},
 							"justAnotherString": {Type: "string"},
 						},
 					},
