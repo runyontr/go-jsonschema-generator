@@ -57,6 +57,9 @@ type property struct {
 	Properties           map[string]*property `json:"properties,omitempty"`
 	Required             []string             `json:"required,omitempty"`
 	AdditionalProperties bool                 `json:"additionalProperties,omitempty"`
+	Description          string               `json:"description,omitempty"`
+	Default              string               `json:"default,omitempty"`
+	Deprecated           string               `json:"deprecated,omitempty"`
 }
 
 func (p *property) read(t reflect.Type, opts tagOptions) {
